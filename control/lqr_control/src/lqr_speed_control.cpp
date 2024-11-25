@@ -87,13 +87,14 @@ tuple<MatrixXd, MatrixXd, VectorXd> dlqr(const MatrixXd& A, const MatrixXd& B, c
 tuple<double, int, double, double, double> lqr_speed_steering_control(const State& state, const vector<double>& cx, const vector<double>& cy, const vector<double>& cyaw, const vector<double>& ck, double pe, double pth_e, const vector<double>& sp, const MatrixXd& Q, const MatrixXd& R, const SimulationParams& params) {
     int ind;
     double e;
+    
     try {
         tie(ind, e) = calc_nearest_index(state, cx, cy, cyaw);
     } catch (const std::exception& e) {
         std::cerr << "Error calculating nearest index: " << e.what() << std::endl;
         return make_tuple(0.0, 0, 0.0, 0.0, 0.0);
     }
-
+    
     double tv = sp[ind];
     double k = ck[ind];
     double v = state.v;

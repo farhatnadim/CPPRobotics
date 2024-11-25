@@ -64,16 +64,20 @@ void ClothoidPathGenerator::generateStraightPath(const Point& start_point,
     path.points.push_back({start_point.x + t * (goal_point.x - start_point.x),
                            start_point.y + t * (goal_point.y - start_point.y)});
     path.steering_angles.push_back(0);
+    path.yaws.push_back(start_point.heading);
+    path.curvatures.push_back(0);
   }
 }
 
 void ClothoidPathGenerator::constructPath(const Point& start_point, double start_yaw,
                                           double L, double curvature,
                                           double curvature_rate,
-                                          ClothoidPath& path) {
+                                          ClothoidPath& path) 
+{
   double s_step = L / (n_path_points - 1);
 
-  for (int i = 0; i < n_path_points; ++i) {
+  for (int i = 0; i < n_path_points; ++i) 
+  {
     double s = s_step * i;
     double x = start_point.x +
                s * X(curvature_rate * s * s, curvature * s, start_yaw, 0, 1);
@@ -82,6 +86,7 @@ void ClothoidPathGenerator::constructPath(const Point& start_point, double start
     path.points.push_back({x, y});
     path.curvatures.push_back(curvature+curvature_rate*s);
     path.steering_angles.push_back(atan(curvature*wheelbase));
+
   }
 
   // Compute yaws for each point

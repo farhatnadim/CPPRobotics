@@ -1,11 +1,11 @@
-#include "clothoid_path.hpp"
+#include "planning/path_fitting/clothoid/src/clothoid_path.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "lqr_control/lqr_speed_control.hpp"
+#include "control/lqr_control/src/lqr_speed_control.hpp"
 
 struct PathNode {
   std::string node_id;
@@ -33,14 +33,15 @@ struct PathData {
   }
 };
 
-void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_profile, const std::vector<double>& goal) 
+void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_profile, const std::vector<double>& goal,const double &max_steer_angle) 
 {
     // if path is empty, return
-    if (path.points.empty()) {
-        std::cerr << "Path contains no points" << std::endl;
+    if (path.points.empty() || path.yaws.empty() || path.curvatures.empty()) {
+        std::cerr << "Path has empty points, yaws, or curvatures" << std::endl;
         return;
     }
     SimulationParams params;
+    params.max_steer = max_steer_angle;
     // LQR matrices
     Matrix<double, STATE_DIM, STATE_DIM> lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
     Matrix<double, CONTROL_DIM, CONTROL_DIM> lqr_R = Matrix<double, CONTROL_DIM, CONTROL_DIM>::Identity();
@@ -98,10 +99,12 @@ void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_pr
         t.push_back(time);
     }
     // write x, y, yaw to a csv file
-    std::ofstream file("lqr_speed_control.csv");
+    static int counter = 0;
+    std::ofstream file("lqr_speed_control_" + std::to_string(counter) + ".csv");
     for (size_t i = 0; i < x.size(); i++) {
         file << t[i] << "," << x[i] << "," << y[i] << "," << yaw[i] << "," << v[i] << std::endl;
     }
+    counter++;
     file.close();
     
 }
@@ -112,6 +115,8 @@ int main() {
   int n_path_points = 300;
   ClothoidPathGenerator generator(n_path_points, wheelbase);
   PathData path_data;
+  // steering angles vector
+  std::vector<double> max_steer_angles = {0, 26.64*M_PI/180.0, 0.0, 0.0, 48.37*M_PI/180.0  , 0.0};
   const auto& start_node = path_data.nodes["506"];
 
   // Define waypoints
@@ -142,18 +147,20 @@ int main() {
     std::cerr << "Failed to generate any valid clothoid paths" << std::endl;
     return 1;
   }
-
+  static int counter = 0;
   for (const auto& path : paths) 
   {
     // Add size checking
-    if (path.points.empty()) {
+    if (path.points.empty())
+    {
       std::cerr << "Path contains no points" << std::endl;
       continue;
     }
 
     std::vector<double> speed_profile(path.points.size(), 0.6);
     std::vector<double> goal = {end_node.x, end_node.y};
-    do_simulation(path, speed_profile, goal);
+    do_simulation(path, speed_profile, goal, max_steer_angles[counter]);
+    counter++;
   }
 
   return 0;

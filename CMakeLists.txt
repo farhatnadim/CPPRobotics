@@ -9,8 +9,8 @@ project(trajectory_planning)
 set(CMAKE_CXX_STANDARD 20)
 
 #recurse into directories on the same level
-add_subdirectory(control)
-add_subdirectory(planning)
+add_subdirectory(control/lqr_control/src)
+add_subdirectory(planning/path_fitting/clothoid/src/)
 # create the executable
 add_executable(trajectory_planning main.cpp)
 
