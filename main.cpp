@@ -33,7 +33,7 @@ struct PathData {
   }
 };
 
-void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_profile, const std::vector<double>& goal,const double &max_steer_angle) 
+void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_profile,const Point &start,const Point &goal,const double &max_steer_angle) 
 {
     // if path is empty, return
     if (path.points.empty() || path.yaws.empty() || path.curvatures.empty()) {
@@ -41,6 +41,7 @@ void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_pr
         return;
     }
     SimulationParams params;
+    params.start = start;
     params.max_steer = max_steer_angle;
     // LQR matrices
     Matrix<double, STATE_DIM, STATE_DIM> lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
@@ -84,8 +85,8 @@ void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_pr
 
         time += params.dt;
 
-        double dx = state.x - goal[0];
-        double dy = state.y - goal[1];
+        double dx = state.x - goal.x;
+        double dy = state.y - goal.y;
         if (hypot(dx, dy) <= params.goal_dis) 
         {
             std::cout << "Goal" << std::endl;
@@ -159,7 +160,7 @@ int main() {
 
     std::vector<double> speed_profile(path.points.size(), 0.6);
     std::vector<double> goal = {end_node.x, end_node.y};
-    do_simulation(path, speed_profile, goal, max_steer_angles[counter]);
+    do_simulation(path, speed_profile, path.points.front(),path.points.back(), max_steer_angles[counter]);
     counter++;
   }
 
