@@ -32,8 +32,25 @@ struct PathData {
     nodes["506"] = {"506", 195.151, 183, 180, "507", 0.00, 1.500, "Clothoid"};
   }
 };
+std::vector<double> calc_speed_profile(const std::vector<double>& yaw, double max_speed, double stop_speed, double goal_dis) {
+    std::vector<double> speed_profile(yaw.size(), max_speed);
 
-void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_profile,const Point &start,const Point &goal,const double &max_steer_angle) 
+    
+    // Apply smooth deceleration
+    for (int i = 0; i < goal_dis && i < static_cast<int>(yaw.size()); ++i) {
+        double ratio = static_cast<double>(i) / goal_dis;
+        // Cubic smoothing function
+        double smooth_ratio = ratio * ratio * (3.0 - 2.0 * ratio);
+        // Calculate speed with minimum speed limit
+        speed_profile[speed_profile.size() - 1 - i] = std::max(
+            stop_speed,
+            max_speed * (1.0 - smooth_ratio)
+        );
+    }
+    
+    return speed_profile;
+}
+void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal,const double &max_steer_angle, const std::vector<double>& speed_profile) 
 {
     // if path is empty, return
     if (path.points.empty() || path.yaws.empty() || path.curvatures.empty()) {
@@ -41,7 +58,6 @@ void do_simulation(const ClothoidPath& path, const std::vector<double>& speed_pr
         return;
     }
     SimulationParams params;
-    params.start = start;
     params.max_steer = max_steer_angle;
     // LQR matrices
     Matrix<double, STATE_DIM, STATE_DIM> lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
@@ -118,6 +134,9 @@ int main() {
   PathData path_data;
   // steering angles vector
   std::vector<double> max_steer_angles = {0, 26.64*M_PI/180.0, 0.0, 0.0, 48.37*M_PI/180.0  , 0.0};
+  std::vector<double> max_speeds = {0.6, 2.0, 1.5, 0.6, 2.0, 1.5};
+  std::vector<double> stop_speeds = {0.6, 1.5, 0.6, 2.0, 1.5, 0.001};
+  std::vector<double> goal_dis = {10, 10, 10, 10, 10, 10};
   const auto& start_node = path_data.nodes["506"];
 
   // Define waypoints
@@ -158,9 +177,13 @@ int main() {
       continue;
     }
 
-    std::vector<double> speed_profile(path.points.size(), 0.6);
+    std::vector<double> speed_profile;
+    SimulationParams params;
+
+    speed_profile = calc_speed_profile(path.yaws, max_speeds[counter], stop_speeds[counter], goal_dis[counter]);
     std::vector<double> goal = {end_node.x, end_node.y};
-    do_simulation(path, speed_profile, path.points.front(),path.points.back(), max_steer_angles[counter]);
+
+    do_simulation(path, path.points.front(),path.points.back(), max_steer_angles[counter], speed_profile);
     counter++;
   }
 

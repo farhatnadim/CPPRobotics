@@ -48,11 +48,11 @@ void ClothoidPathGenerator::generateClothoidPath(const Point& start_point,
     return;
   }
 
-  double L = computePathLength(r, phi1, delta, A);
-  double curvature = computeCurvature(delta, A, L);
-  double curvature_rate = computeCurvatureRate(A, L);
+  double path_length = computePathLength(r, phi1, delta, A);
+  double curvature = computeCurvature(delta, A, path_length);
+  double curvature_rate = computeCurvatureRate(A, path_length);
 
-  constructPath(start_point, start_point.heading, L, curvature,
+  constructPath(start_point, start_point.heading, path_length, curvature,
                 curvature_rate, path);
 }
 
@@ -66,15 +66,16 @@ void ClothoidPathGenerator::generateStraightPath(const Point& start_point,
     path.steering_angles.push_back(0);
     path.yaws.push_back(start_point.heading);
     path.curvatures.push_back(0);
+
   }
 }
 
 void ClothoidPathGenerator::constructPath(const Point& start_point, double start_yaw,
-                                          double L, double curvature,
+                                          double path_length, double curvature,
                                           double curvature_rate,
                                           ClothoidPath& path) 
 {
-  double s_step = L / (n_path_points - 1);
+  double s_step = path_length / (n_path_points - 1);
 
   for (int i = 0; i < n_path_points; ++i) 
   {
@@ -157,14 +158,15 @@ double ClothoidPathGenerator::computePathLength(double r, double theta1, double 
   return r / X(2 * A, delta - A, theta1, 0, 1);
 }
 
-double ClothoidPathGenerator::computeCurvature(double delta, double A, double L) {
-  return (delta - A) / L;
+double ClothoidPathGenerator::computeCurvature(double delta, double A, double path_length) {
+  return (delta - A) / path_length;
 }
 
-double ClothoidPathGenerator::computeCurvatureRate(double A, double L) {
-  return 2 * A / (L * L);
+double ClothoidPathGenerator::computeCurvatureRate(double A, double path_length) {
+  return 2 * A / (path_length * path_length);
 }
 
 double ClothoidPathGenerator::normalizeAngle(double angle_rad) {
   return std::fmod(angle_rad + M_PI, 2 * M_PI) - M_PI;
 }
+

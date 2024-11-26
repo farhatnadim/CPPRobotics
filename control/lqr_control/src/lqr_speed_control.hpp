@@ -43,13 +43,12 @@ struct State {
         : x(x), y(y), yaw(yaw), v(v) {}
 };
 
-
 State update(State state, double a, double delta, const SimulationParams& params);
 double pi_2_pi(double angle);
 std::tuple<int, double> calc_nearest_index(const State& state, const std::vector<double>& cx,
                                          const std::vector<double>& cy, const std::vector<double>& cyaw);
-MatrixXd solve_dare(const MatrixXd& A, const MatrixXd& B, const MatrixXd& Q, const MatrixXd& R);
-std::tuple<MatrixXd, MatrixXd, VectorXd> dlqr(const MatrixXd& A, const MatrixXd& B, const MatrixXd& Q, const MatrixXd& R);
+MatrixXd solve_dare(const MatrixXd& A, const MatrixXd& B, const MatrixXd& Q, const MatrixXd& R, const LQRParams& params);
+std::tuple<MatrixXd, MatrixXd, VectorXd> dlqr(const MatrixXd& A, const MatrixXd& B, const MatrixXd& Q, const MatrixXd& R, const LQRParams& params);
 std::tuple<double, int, double, double, double> lqr_speed_steering_control(const State& state, 
     const std::vector<double>& cx, const std::vector<double>& cy, const std::vector<double>& cyaw, 
     const std::vector<double>& ck, double pe, double pth_e, const std::vector<double>& sp, 
