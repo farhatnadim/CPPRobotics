@@ -57,14 +57,19 @@ void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal
         std::cerr << "Path has empty points, yaws, or curvatures" << std::endl;
         return;
     }
+    // do these in a constructor for a the class motion controller
+    // private variables
     SimulationParams params;
+    State state;
+    Matrix<double, STATE_DIM, STATE_DIM> lqr_Q;
+    Matrix<double, CONTROL_DIM, CONTROL_DIM> lqr_R;
     params.max_steer = max_steer_angle;
     // LQR matrices
-    Matrix<double, STATE_DIM, STATE_DIM> lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
-    Matrix<double, CONTROL_DIM, CONTROL_DIM> lqr_R = Matrix<double, CONTROL_DIM, CONTROL_DIM>::Identity();
-    State state(path.points[0].x, path.points[0].y, path.yaws[0], 0.0);
+    lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
+    lqr_R = Matrix<double, CONTROL_DIM, CONTROL_DIM>::Identity();
+    state = State(path.points[0].x, path.points[0].y, path.yaws[0], 0.0);
     double time = 0.0;
-
+    // convert these
     std::vector<double> x, y, yaw, v, t;
     x.push_back(state.x);
     y.push_back(state.y);
@@ -167,7 +172,7 @@ int main() {
     std::cerr << "Failed to generate any valid clothoid paths" << std::endl;
     return 1;
   }
-  static int counter = 0;
+  static int counter = 0; 
   for (const auto& path : paths) 
   {
     // Add size checking
