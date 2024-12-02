@@ -25,7 +25,7 @@ class ClothoidPathGenerator {
   ClothoidPathGenerator(int n_path_points, double wheelbase);
 
   void generateClothoidPaths(const std::vector<Point>& all_points,
-                             std::vector<ClothoidPath>& paths);
+                             ClothoidPath & full_path);
 
   void generateClothoidPath(const Point& start_point, const Point& goal_point,
                             ClothoidPath& path);

@@ -12,12 +12,15 @@ ClothoidPathGenerator::ClothoidPathGenerator(int n_path_points, double wheelbase
     }
 
 void ClothoidPathGenerator::generateClothoidPaths(const std::vector<Point>& all_points,
-                                                  std::vector<ClothoidPath>& paths) {
+                                                  ClothoidPath & full_path) {
   for (size_t i = 0; i < all_points.size() - 1; i++) {
     ClothoidPath path;
     generateClothoidPath(all_points[i], all_points[i + 1], path);
     if (!path.points.empty()) {
-      paths.push_back(path);
+      full_path.points.insert(full_path.points.end(), path.points.begin(), path.points.end());
+      full_path.steering_angles.insert(full_path.steering_angles.end(), path.steering_angles.begin(), path.steering_angles.end());
+      full_path.yaws.insert(full_path.yaws.end(), path.yaws.begin(), path.yaws.end());
+      full_path.curvatures.insert(full_path.curvatures.end(), path.curvatures.begin(), path.curvatures.end());
     }
   }
 }
