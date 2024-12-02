@@ -91,9 +91,13 @@ tuple<double, int, double, double, double> lqr_speed_steering_control(const Stat
     try 
     {
         tie(ind, e) = calc_nearest_index(state, cx, cy, cyaw);
+<<<<<<< Updated upstream
     }
 
     catch (const std::exception& e)
+=======
+    } catch (const std::exception& e) 
+>>>>>>> Stashed changes
     {
         std::cerr << "Error calculating nearest index: " << e.what() << std::endl;
         return make_tuple(0.0, 0, 0.0, 0.0, 0.0);
