@@ -32,12 +32,12 @@ struct PathData {
     nodes["506"] = {"506", 195.151, 183, 180, "507", 0.00, 1.500, "Clothoid"};
   }
 };
-std::vector<double> calc_speed_profile(const std::vector<double>& yaw, double max_speed, double stop_speed, double goal_dis) {
-    std::vector<double> speed_profile(yaw.size(), max_speed);
+std::vector<double> calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis) 
+{
+    std::vector<double> speed_profile(path_size-goal_dis, 2);
 
-    
     // Apply smooth deceleration
-    for (int i = 0; i < goal_dis && i < static_cast<int>(yaw.size()); ++i) {
+    for (int i = 0; i < goal_dis && i < path_size; ++i) {
         double ratio = static_cast<double>(i) / goal_dis;
         // Cubic smoothing function
         double smooth_ratio = ratio * ratio * (3.0 - 2.0 * ratio);
@@ -47,23 +47,34 @@ std::vector<double> calc_speed_profile(const std::vector<double>& yaw, double ma
             max_speed * (1.0 - smooth_ratio)
         );
     }
-    
+    speed_profile.push_back(stop_speed);
     return speed_profile;
 }
-void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal,const double &max_steer_angle, const std::vector<double>& speed_profile) 
+void do_simulation(const ClothoidPath& path) 
 {
     // if path is empty, return
     if (path.points.empty() || path.yaws.empty() || path.curvatures.empty()) {
         std::cerr << "Path has empty points, yaws, or curvatures" << std::endl;
         return;
     }
+    std::vector<double> max_steer_angles = {0, 26.64*M_PI/180.0, 0.0, 0.0, 48.37*M_PI/180.0  , 0.0};
+    std::vector<double> max_speeds = {0.6, 2.0, 1.5, 0.6, 2.0, 1.5};
+    std::vector<double> stop_speeds = {0.6, 1.5, 0.6, 2.0, 1.5, 0.001};
+    std::vector<double> goal_dis = {10, 10, 10, 10, 10, 10};
     // do these in a constructor for a the class motion controller
     // private variables
+    constexpr double max_speed {2.0};
+    constexpr double stop_speed {0.001};
+    constexpr int goal_distance {20};
+
     SimulationParams params;
+    params.max_speed = max_speed;
+    params.stop_speed = stop_speed;
+    params.goal_dis = goal_distance;
     State state;
     Matrix<double, STATE_DIM, STATE_DIM> lqr_Q;
     Matrix<double, CONTROL_DIM, CONTROL_DIM> lqr_R;
-    params.max_steer = max_steer_angle;
+   
     // LQR matrices
     lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
     lqr_R = Matrix<double, CONTROL_DIM, CONTROL_DIM>::Identity();
@@ -76,12 +87,20 @@ void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal
     yaw.push_back(state.yaw);
     v.push_back(state.v);
     t.push_back(0.0);
-
+    auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
+    // write the speed profile to a file
+    std::ofstream speed_profile_file("speed_profile.csv");
+    for ( auto &speed : speed_profile)
+    {
+        speed_profile_file << speed << std::endl;
+    }
+    speed_profile_file.close();
     double e = 0.0, e_th = 0.0;
 
     std::vector<double> path_x;
     std::vector<double> path_y;
-    for (const auto& point : path.points) {
+    for (const auto& point : path.points) 
+{
         path_x.push_back(point.x);
         path_y.push_back(point.y);
     }
@@ -105,10 +124,12 @@ void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal
         }
 
         time += params.dt;
-
-        double dx = state.x - goal.x;
-        double dy = state.y - goal.y;
-        if (hypot(dx, dy) <= params.goal_dis) 
+        double dx = state.x - path.points.back().x;
+        double dy = state.y - path.points.back().y;
+        std::cout << "Distance: " << hypot(dx, dy) << std::endl;
+        std::cout << "Goal distance: " << path.points.back().x << "," << path.points.back().y << std::endl;
+        double distance_tolerance = 0.2;
+        if (hypot(dx, dy) <= distance_tolerance) 
         {
             std::cout << "Goal" << std::endl;
             break;
@@ -122,11 +143,12 @@ void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal
     }
     // write x, y, yaw to a csv file
     static int counter = 0;
-    std::ofstream file("lqr_speed_control_" + std::to_string(counter) + ".csv");
-    for (size_t i = 0; i < x.size(); i++) {
+    std::ofstream file("lqr_speed_control_path.csv");
+    for (size_t i = 0; i < x.size(); i++) 
+    { 
         file << t[i] << "," << x[i] << "," << y[i] << "," << yaw[i] << "," << v[i] << std::endl;
     }
-    counter++;
+
     file.close();
     
 }
@@ -134,14 +156,11 @@ void do_simulation(const ClothoidPath& path,const Point &start,const Point &goal
 
 int main() {
   double wheelbase = 3.0;
-  int n_path_points = 300;
+  int n_path_points = 1000;
   ClothoidPathGenerator generator(n_path_points, wheelbase);
   PathData path_data;
   // steering angles vector
-  std::vector<double> max_steer_angles = {0, 26.64*M_PI/180.0, 0.0, 0.0, 48.37*M_PI/180.0  , 0.0};
-  std::vector<double> max_speeds = {0.6, 2.0, 1.5, 0.6, 2.0, 1.5};
-  std::vector<double> stop_speeds = {0.6, 1.5, 0.6, 2.0, 1.5, 0.001};
-  std::vector<double> goal_dis = {10, 10, 10, 10, 10, 10};
+  
   const auto& start_node = path_data.nodes["506"];
 
   // Define waypoints
@@ -164,34 +183,25 @@ int main() {
                       end_node.heading * M_PI / 180.0};
   all_points.push_back(goal_point);
 
-  std::vector<ClothoidPath> paths;
-  generator.generateClothoidPaths(all_points, paths);
+  ClothoidPath full_path;
+  generator.generateClothoidPaths(all_points, full_path);
   
   // Add error checking
-  if (paths.empty()) {
+  if (full_path.points.empty()) {
     std::cerr << "Failed to generate any valid clothoid paths" << std::endl;
     return 1;
   }
-  static int counter = 0; 
-  for (const auto& path : paths) 
-  {
-    // Add size checking
-    if (path.points.empty())
-    {
-      std::cerr << "Path contains no points" << std::endl;
-      continue;
-    }
-
-    std::vector<double> speed_profile;
-    SimulationParams params;
-
-    speed_profile = calc_speed_profile(path.yaws, max_speeds[counter], stop_speeds[counter], goal_dis[counter]);
-    std::vector<double> goal = {end_node.x, end_node.y};
-
-    do_simulation(path, path.points.front(),path.points.back(), max_steer_angles[counter], speed_profile);
-    counter++;
+  
+  // full path size
+  int path_size = full_path.yaws.size();
+  // print the path size
+  std::cout << "Path size: " << path_size << std::endl;
+  // write the path to a csv file
+  std::ofstream path_file("path.csv");
+  for (size_t i = 0; i < full_path.points.size(); i++) {
+    path_file << full_path.points[i].x << "," << full_path.points[i].y << std::endl;
   }
-
+  do_simulation(full_path);
   return 0;
 }
 
