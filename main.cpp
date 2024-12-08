@@ -32,16 +32,10 @@ struct PathData {
     nodes["506"] = {"506", 195.151, 183, 180, "507", 0.00, 1.500, "Clothoid"};
   }
 };
-<<<<<<< Updated upstream
-std::vector<double> calc_speed_profile(const int &path_size, double max_speed, double stop_speed, int goal_dis)
-{
-    std::vector<double> speed_profile(path_size, max_speed);
-=======
 std::vector<double> calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis) {
     std::vector<double> speed_profile(path_size, 2);
 
     
->>>>>>> Stashed changes
     // Apply smooth deceleration
     for (int i = 0; i < goal_dis && i < path_size; ++i) {
         double ratio = static_cast<double>(i) / goal_dis;
@@ -80,11 +74,7 @@ void do_simulation(const ClothoidPath& path)
     State state;
     Matrix<double, STATE_DIM, STATE_DIM> lqr_Q;
     Matrix<double, CONTROL_DIM, CONTROL_DIM> lqr_R;
-<<<<<<< Updated upstream
-    params.max_steer = 0.0 ;
-=======
    
->>>>>>> Stashed changes
     // LQR matrices
     lqr_Q = Matrix<double, STATE_DIM, STATE_DIM>::Identity() * WEIGHT_STATE;  // Increase weights
     lqr_R = Matrix<double, CONTROL_DIM, CONTROL_DIM>::Identity();
@@ -140,21 +130,10 @@ void do_simulation(const ClothoidPath& path)
             target_ind++;
         }
 
-<<<<<<< Updated upstream
-        double dx = path.points.back().x - state.x;
-        double dy = path.points.back().y - state.y;
-        // need to change this to stop when the distance is less than the goal distance
-        double distance_to_goal = hypot(dx, dy);
-        std::cout << "Distance to goal: " << distance_to_goal << std::endl;
-        if (distance_to_goal <= 0.00001) 
-=======
-        time += params.dt;
-
         double dx = path.points.back().x - state.x;
         double dy = path.points.back().y - state.y;
         double goal_dis = 0.1;
         if (hypot(dx, dy) <= goal_dis) 
->>>>>>> Stashed changes
         {
             std::cout << "Reached Goal" << std::endl;
             break;
@@ -173,17 +152,11 @@ void do_simulation(const ClothoidPath& path)
         i++;
     }
     // write x, y, yaw to a csv file
-<<<<<<< Updated upstream
-    std::ofstream file("lqr_speed_control_path.csv");
-    for (size_t i = 0; i < x.size(); i++) {
-        file << x[i] << "," << y[i] << "," << yaw[i] << "," << v[i] << std::endl;
-=======
     static int counter = 0;
     std::ofstream file("lqr_speed_control_" + std::to_string(counter) + ".csv");
     for (size_t i = 0; i < x.size(); i++) 
     {
         file << t[i] << "," << x[i] << "," << y[i] << "," << yaw[i] << "," << v[i] << std::endl;
->>>>>>> Stashed changes
     }
 
     file.close();

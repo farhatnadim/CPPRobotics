@@ -23,11 +23,7 @@ struct LQRParams {
 
 
 struct SimulationParams {
-<<<<<<< Updated upstream
-    SimulationParams(double L = 1.0, double max_steer = 0.5, double max_speed = 2.0, double T = 100.0, double goal_dis = 10, double stop_speed = 0.1, double dt = 0.03, LQRParams lqr_params = LQRParams())
-=======
     SimulationParams(double L = 1.0, double max_steer = 0.35, double max_speed = 2.0, double T = 30.0, double goal_dis = 20, double stop_speed = 0.1, double dt = 0.03, LQRParams lqr_params = LQRParams())
->>>>>>> Stashed changes
         : L(L), max_steer(max_steer), max_speed(max_speed), T(T), goal_dis(goal_dis), stop_speed(stop_speed), dt(dt), lqr_params(lqr_params) {}
     double L;
     double max_steer;
