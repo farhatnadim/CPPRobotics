@@ -63,8 +63,8 @@ void do_simulation(const ClothoidPath& path)
     // do these in a constructor for a the class motion controller
     // private variables
     constexpr double max_speed {2.0};
-    constexpr double stop_speed {0.001};
-    constexpr int goal_distance {20};
+    constexpr double stop_speed {0.6};
+    constexpr int goal_distance {10};
 
     SimulationParams params;
     params.max_speed = max_speed;
