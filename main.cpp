@@ -40,11 +40,10 @@ std::vector<double> calc_speed_profile(const int &path_size, double max_speed, d
     for (int i = 0; i < goal_dis && i < path_size; ++i) {
         double ratio = static_cast<double>(i) / goal_dis;
         // Cubic smoothing function
-        double smooth_ratio = ratio * ratio * (3.0 - 2.0 * ratio);
         // Calculate speed with minimum speed limit
         speed_profile[speed_profile.size() - 1 - i] = std::max(
             stop_speed,
-            max_speed * (1.0 - smooth_ratio)
+            max_speed * (3*ratio*ratio - 2*ratio*ratio*ratio)
         );
     }
     speed_profile.push_back(stop_speed);
