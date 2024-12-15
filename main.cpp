@@ -32,9 +32,45 @@ struct PathData {
     nodes["506"] = {"506", 195.151, 183, 180, "507", 0.00, 1.500, "Clothoid"};
   }
 };
+
+std::vector<double> trapezoidal_speed_profile(int path_size, double v_max, double v_end, double a_accel, double a_decel) 
+{
+    // Initialize speed profile
+    std::vector<double> speed_profile(path_size, 0.0);
+
+    // 1. Accelerate from start
+    // speed at step i assuming start from 0 and constant accel: v_i = sqrt(2*a_accel*distance)
+    // We'll fill this incrementally and consider partial distances as increments of "1" unit.
+    for (int i = 1; i < path_size; ++i) {
+        double v_prev = speed_profile[i-1];
+        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_accel*1.0); // assuming unit distance between points
+        speed_profile[i] = std::min(v_candidate, v_max);
+    }
+
+    // 2. Decelerate from the end to meet v_end exactly
+    // Starting from the goal backwards, ensure we can stop at v_end
+    speed_profile.back() = v_end;
+    for (int i = path_size-2; i >= 0; --i) {
+        double v_prev = speed_profile[i+1];
+        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_decel*1.0); // from the end backwards
+        // The actual allowed speed at i must be the minimum of what we set during acceleration and what we can achieve ensuring we can slow down in time
+        speed_profile[i] = std::min(speed_profile[i], v_candidate);
+    }
+
+    // After this backward pass, we have a trapezoidal shape. However, the backward pass might reduce speeds below what was set by the forward pass.
+    // To ensure consistency, you might do one or two passes forward again:
+    for (int i = 1; i < path_size; ++i) {
+        double v_prev = speed_profile[i-1];
+        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_accel*1.0);
+        speed_profile[i] = std::min(speed_profile[i], v_candidate);
+    }
+
+    return speed_profile;
+}
+
 std::vector<double> calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis) 
 {
-    std::vector<double> speed_profile(path_size-goal_dis, 2);
+    std::vector<double> speed_profile(path_size-goal_dis, max_speed);
 
     // Apply smooth deceleration
     for (int i = 0; i < goal_dis && i < path_size; ++i) {
@@ -86,7 +122,8 @@ void do_simulation(const ClothoidPath& path)
     yaw.push_back(state.yaw);
     v.push_back(state.v);
     t.push_back(0.0);
-    auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
+    // auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
+    auto speed_profile = trapezoidal_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, 1.0, 1.0);
     // write the speed profile to a file
     std::ofstream speed_profile_file("speed_profile.csv");
     for ( auto &speed : speed_profile)
@@ -99,7 +136,7 @@ void do_simulation(const ClothoidPath& path)
     std::vector<double> path_x;
     std::vector<double> path_y;
     for (const auto& point : path.points) 
-{
+   {
         path_x.push_back(point.x);
         path_y.push_back(point.y);
     }
