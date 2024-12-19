@@ -141,6 +141,15 @@ void do_simulation(const ClothoidPath& path)
         path_y.push_back(point.y);
     }
     
+    std::ofstream path_file("data.txt");
+    for (int i = 0; i < path.yaws.size(); i++)
+    {
+        path_file << path.points[i].x << "," << path.points[i].y << "," << path.yaws[i] << "," << path.curvatures[i] << std::endl;
+    }
+
+    path_file.close();
+  
+    std::ofstream state_file("state.txt");
     while (params.T >= time) 
     {
         double dl, ai;
@@ -151,9 +160,13 @@ void do_simulation(const ClothoidPath& path)
             e, e_th, speed_profile, lqr_Q, lqr_R, 
             params
         );    
-
+     
         state = update(state, ai, dl, params);
-
+        // write to file
+        
+        state_file << state.x << "," << state.y << "," << state.yaw << "," << state.v << std::endl;
+        std::cout << "Press Enter to continue..." << std::endl;
+        std::cin.get();
         if (abs(state.v) <= params.stop_speed) 
         {
             target_ind++;
@@ -192,7 +205,7 @@ void do_simulation(const ClothoidPath& path)
 
 int main() {
   double wheelbase = 3.0;
-  int n_path_points = 1000;
+  int n_path_points = 100;
   ClothoidPathGenerator generator(n_path_points, wheelbase);
   PathData path_data;
   // steering angles vector
