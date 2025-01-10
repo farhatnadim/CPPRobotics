@@ -122,8 +122,8 @@ void do_simulation(const ClothoidPath& path)
     yaw.push_back(state.yaw);
     v.push_back(state.v);
     t.push_back(0.0);
-    // auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
-    auto speed_profile = trapezoidal_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, 1.0, 1.0);
+    auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
+    //auto speed_profile = trapezoidal_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, 1.0, 1.0);
     // write the speed profile to a file
     std::ofstream speed_profile_file("speed_profile.csv");
     for ( auto &speed : speed_profile)
@@ -163,10 +163,7 @@ void do_simulation(const ClothoidPath& path)
      
         state = update(state, ai, dl, params);
         // write to file
-        
-        state_file << state.x << "," << state.y << "," << state.yaw << "," << state.v << std::endl;
-        std::cout << "Press Enter to continue..." << std::endl;
-        std::cin.get();
+    
         if (abs(state.v) <= params.stop_speed) 
         {
             target_ind++;
