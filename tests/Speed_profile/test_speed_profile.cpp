@@ -17,8 +17,10 @@ TEST(SpeedProfileTest, BasicDecelerationTest)
     const int SIZE = PI_MAX_TRAJECTORY_PTS;
     std::array<double, SIZE> speed_profile_1{};
     std::array<double, SIZE> speed_profile_2{};
+    std::array<double, SIZE> speed_profile_3{};
     speed_profile_1.fill(0.0);
     speed_profile_2.fill(0.0);
+    speed_profile_3.fill(0.0);
 
 
     // 2. Define test parameters
@@ -92,6 +94,17 @@ TEST(SpeedProfileTest, BasicDecelerationTest)
                        stop_speed_6,
                        goal_dis_6,
                        speed_profile_2);
+    int start_index_7 = 0;
+    int end_index_7   = SIZE;     // We'll set half the array in this test
+    double max_speed_7 =  2;  // example: 10 m/s
+    double stop_speed_7 = 0   ;  // fully stop
+    double goal_dis_7   = 10.0; // number of points over which to decelerate
+    calc_speed_profile(start_index_7,
+                       end_index_7,
+                       max_speed_7,
+                       stop_speed_7,
+                       goal_dis_7,
+                       speed_profile_3);
     // 4. Basic sanity checks
     //    We expect first part of the segment to be near max_speed, 
     //    and the last 'goal_dis' points to have decreased.
@@ -102,6 +115,7 @@ TEST(SpeedProfileTest, BasicDecelerationTest)
     // 5. Write output to a CSV file for external plotting
     std::ofstream ofs("speed_profile_output_part1.csv");
     std::ofstream ofs2("speed_profile_output_part2.csv");
+    std::ofstream ofs3("speed_profile_output_part3.csv");
     if (!ofs.is_open()) {
         std::cerr << "Error: Could not open file for writing.\n";
         return;
@@ -119,6 +133,11 @@ TEST(SpeedProfileTest, BasicDecelerationTest)
         ofs2 << i << "," << speed_profile_2[i] << "\n";
     }
     ofs2.close();
+    ofs3 << "Index,Speed\n";
+    for (int i = 0; i < SIZE; ++i) {
+        ofs3 << i << "," << speed_profile_3[i] << "\n";
+    }
+    ofs3.close();
 
     // Test completes successfully if it reaches this point.
     SUCCEED();

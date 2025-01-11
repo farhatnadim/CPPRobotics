@@ -7,6 +7,8 @@
 #include <vector>
 #include "control/lqr_control/src/lqr_speed_control.hpp"
 
+
+
 struct PathNode {
   std::string node_id;
   double x;
@@ -33,40 +35,6 @@ struct PathData {
   }
 };
 
-std::vector<double> trapezoidal_speed_profile(int path_size, double v_max, double v_end, double a_accel, double a_decel) 
-{
-    // Initialize speed profile
-    std::vector<double> speed_profile(path_size, 0.0);
-
-    // 1. Accelerate from start
-    // speed at step i assuming start from 0 and constant accel: v_i = sqrt(2*a_accel*distance)
-    // We'll fill this incrementally and consider partial distances as increments of "1" unit.
-    for (int i = 1; i < path_size; ++i) {
-        double v_prev = speed_profile[i-1];
-        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_accel*1.0); // assuming unit distance between points
-        speed_profile[i] = std::min(v_candidate, v_max);
-    }
-
-    // 2. Decelerate from the end to meet v_end exactly
-    // Starting from the goal backwards, ensure we can stop at v_end
-    speed_profile.back() = v_end;
-    for (int i = path_size-2; i >= 0; --i) {
-        double v_prev = speed_profile[i+1];
-        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_decel*1.0); // from the end backwards
-        // The actual allowed speed at i must be the minimum of what we set during acceleration and what we can achieve ensuring we can slow down in time
-        speed_profile[i] = std::min(speed_profile[i], v_candidate);
-    }
-
-    // After this backward pass, we have a trapezoidal shape. However, the backward pass might reduce speeds below what was set by the forward pass.
-    // To ensure consistency, you might do one or two passes forward again:
-    for (int i = 1; i < path_size; ++i) {
-        double v_prev = speed_profile[i-1];
-        double v_candidate = std::sqrt(v_prev*v_prev + 2*a_accel*1.0);
-        speed_profile[i] = std::min(speed_profile[i], v_candidate);
-    }
-
-    return speed_profile;
-}
 
 void calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis, std::vector<double> &speed_profile) 
 {
@@ -84,6 +52,56 @@ void calc_speed_profile(const int &path_size, double max_speed, double stop_spee
     }
     speed_profile.push_back(stop_speed);
 }
+
+void calc_speed_profile_array(const int start_index,
+                        const int end_index,
+                        double max_speed,
+                        double stop_speed,
+                        int goal_dis,
+                        std::array<double, SIZE>& speed_profile)
+{
+    // Basic validation
+    if (start_index < 0 || end_index <= start_index ||
+        end_index > static_cast<int>(speed_profile.size()))
+    {
+        std::cerr << "[calc_speed_profile] Invalid start/end indices.\n";
+        return;
+    }
+
+    // Convert goal_dis to an integer index range
+    int decel_count = goal_dis;
+    if (decel_count < 0) {
+        // If goal_dis is negative for some reason, just reset
+        decel_count = 0;
+    }
+
+    // 1. Fill [start_index, end_index) with max_speed
+    std::fill(speed_profile.begin() + start_index,
+              speed_profile.begin() + end_index,
+              max_speed);
+
+    // 2. Apply smooth deceleration from the back
+    //    decelerate over min(decel_count, end_index - start_index) points
+    decel_count = std::min(decel_count, end_index - start_index);
+
+    for (int i = 0; i < decel_count; ++i) {
+        double ratio = static_cast<double>(i) / decel_count;  // from 0 to 1
+        double deceleration_ratio = 3 * ratio * ratio - 2 * ratio * ratio * ratio;
+
+        int index_from_rear = end_index - i - 1;  // e.g., if i=0 -> last point in [start_index, end_index)
+        // Check boundary again (though it should be safe)
+        if (index_from_rear < start_index || index_from_rear >= end_index) {
+            continue;
+        }
+
+        double speed_from_rear = std::max(stop_speed, max_speed * deceleration_ratio);
+        speed_profile[index_from_rear] = speed_from_rear;
+    }
+
+    
+}
+
+
 void do_simulation(const ClothoidPath& path) 
 {
     // if path is empty, return
@@ -122,11 +140,18 @@ void do_simulation(const ClothoidPath& path)
     v.push_back(state.v);
     t.push_back(0.0);
     std::vector<double> speed_profile(path.yaws.size(), 0.0);
+    std::array<double, SIZE> speed_profile_array;
+    speed_profile_array.fill(0.0);
     calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis, speed_profile);
-    //auto speed_profile = trapezoidal_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, 1.0, 1.0);
+    calc_speed_profile_array(0, 600, 2.0, 0, 10, speed_profile_array);
+    // print the speed profile
+    for (int i = 0; i < speed_profile_array.size(); i++) {
+        std::cout << speed_profile_array[i] << std::endl;
+    }
+
     // write the speed profile to a file
     std::ofstream speed_profile_file("speed_profile.csv");
-    for ( auto &speed : speed_profile)
+    for ( auto &speed : speed_profile_array)
     {
         speed_profile_file << speed << std::endl;
     }
@@ -155,9 +180,9 @@ void do_simulation(const ClothoidPath& path)
         double dl, ai;
         int target_ind;
         
-        std::tie(dl, target_ind, e, e_th, ai) = lqr_speed_steering_control(
+        std::tie(dl, target_ind, e, e_th, ai) = lqr_speed_steering_control_array(
             state, path_x, path_y, path.yaws, path.curvatures, 
-            e, e_th, speed_profile, lqr_Q, lqr_R, 
+            e, e_th, speed_profile_array, lqr_Q, lqr_R, 
             params
         );    
      

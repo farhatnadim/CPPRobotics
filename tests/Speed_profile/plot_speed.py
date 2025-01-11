@@ -3,7 +3,7 @@
 import csv
 import matplotlib.pyplot as plt
 
-def plot_speed_profile(csv_file):
+def plot_speed_profile(csv_file, title):
     indices = []
     speeds = []
 
@@ -20,7 +20,7 @@ def plot_speed_profile(csv_file):
     # 2. Plot
     plt.figure(figsize=(8, 4))
     plt.plot(indices, speeds, marker='o', linewidth=2)
-    plt.title("Speed Profile")
+    plt.title(title)
     plt.xlabel("Index")
     plt.ylabel("Speed (m/s)")
     plt.grid(True)
@@ -30,5 +30,6 @@ def plot_speed_profile(csv_file):
     plt.savefig("speed_profile_plot.png")
 
 if __name__ == "__main__":
-    plot_speed_profile("build/speed_profile_output_part1.csv")
-    plot_speed_profile("build/speed_profile_output_part2.csv")
+    plot_speed_profile("build/speed_profile_output_part1.csv", "Speed Profile 1")
+    plot_speed_profile("build/speed_profile_output_part2.csv", "Speed Profile 2")
+    plot_speed_profile("build/speed_profile_output_part3.csv", "Speed Profile 3")

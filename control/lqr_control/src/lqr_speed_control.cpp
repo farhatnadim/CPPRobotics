@@ -133,3 +133,50 @@ tuple<double, int, double, double, double> lqr_speed_steering_control(const Stat
 }
 
 
+tuple<double, int, double, double, double> lqr_speed_steering_control_array(const State& state, const vector<double>& cx, const vector<double>& cy, const vector<double>& cyaw, const vector<double>& ck, double pe, double pth_e, const std::array<double, SIZE>& sp, const MatrixXd& Q, const MatrixXd& R, const SimulationParams& params) {
+    int ind;
+    double e;
+    
+    try {
+        tie(ind, e) = calc_nearest_index(state, cx, cy, cyaw);
+    } catch (const std::exception& e) {
+        std::cerr << "Error calculating nearest index: " << e.what() << std::endl;
+        return make_tuple(0.0, 0, 0.0, 0.0, 0.0);
+    }
+    
+    double tv = sp[ind];
+    double k = ck[ind];
+    double v = state.v;
+    double th_e = pi_2_pi(state.yaw - cyaw[ind]);
+
+    Matrix<double, STATE_DIM, STATE_DIM> A;
+    A << 1.0, params.dt, 0.0, 0.0, 0.0,
+         0.0, 0.0, v, 0.0, 0.0,
+         0.0, 0.0, 1.0, params.dt, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 1.0;
+
+    Matrix<double, STATE_DIM, CONTROL_DIM> B;
+    B << 0.0, 0.0,
+         0.0, 0.0,
+         0.0, 0.0,
+         v / params.L, 0.0,
+         0.0, params.dt;
+
+    MatrixXd K;
+    MatrixXd X, eigvals;
+    tie(K, X, eigvals) = dlqr(A, B, Q, R, params.lqr_params);
+    // print the K matrix  for each iteration
+    //cout << "K: " << K << endl;
+    VectorXd x(5);
+    x << e, (e - pe) / params.dt, th_e, (th_e - pth_e) / params.dt, v - tv;
+
+    VectorXd ustar = -K * x;
+
+    double ff = atan2(params.L * k, 1.0);
+    double fb = pi_2_pi(ustar(0));
+    double delta = ff + fb;
+    double accel = ustar(1);
+
+    return make_tuple(delta, ind, e, th_e, accel);
+}
