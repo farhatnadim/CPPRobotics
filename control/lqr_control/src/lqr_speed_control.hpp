@@ -11,7 +11,7 @@ using namespace Eigen;
 constexpr int STATE_DIM = 5;
 constexpr int CONTROL_DIM = 2;
 constexpr double WEIGHT_STATE = 100.0;
-
+constexpr int SIZE = 600;
 
 
 struct LQRParams {
@@ -52,4 +52,8 @@ std::tuple<MatrixXd, MatrixXd, VectorXd> dlqr(const MatrixXd& A, const MatrixXd&
 std::tuple<double, int, double, double, double> lqr_speed_steering_control(const State& state, 
     const std::vector<double>& cx, const std::vector<double>& cy, const std::vector<double>& cyaw, 
     const std::vector<double>& ck, double pe, double pth_e, const std::vector<double>& sp, 
+    const MatrixXd& Q, const MatrixXd& R, const SimulationParams& params);
+std::tuple<double, int, double, double, double> lqr_speed_steering_control_array(const State& state, 
+    const std::vector<double>& cx, const std::vector<double>& cy, const std::vector<double>& cyaw, 
+    const std::vector<double>& ck, double pe, double pth_e, const std::array<double, SIZE>& sp, 
     const MatrixXd& Q, const MatrixXd& R, const SimulationParams& params);

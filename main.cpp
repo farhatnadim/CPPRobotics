@@ -68,9 +68,9 @@ std::vector<double> trapezoidal_speed_profile(int path_size, double v_max, doubl
     return speed_profile;
 }
 
-std::vector<double> calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis) 
+void calc_speed_profile(const int &path_size, double max_speed, double stop_speed, double goal_dis, std::vector<double> &speed_profile) 
 {
-    std::vector<double> speed_profile(path_size-goal_dis, max_speed);
+    std::fill(speed_profile.begin(), speed_profile.end(), max_speed);
 
     // Apply smooth deceleration
     for (int i = 0; i < goal_dis && i < path_size; ++i) {
@@ -83,7 +83,6 @@ std::vector<double> calc_speed_profile(const int &path_size, double max_speed, d
         );
     }
     speed_profile.push_back(stop_speed);
-    return speed_profile;
 }
 void do_simulation(const ClothoidPath& path) 
 {
@@ -122,7 +121,8 @@ void do_simulation(const ClothoidPath& path)
     yaw.push_back(state.yaw);
     v.push_back(state.v);
     t.push_back(0.0);
-    auto speed_profile = calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis);
+    std::vector<double> speed_profile(path.yaws.size(), 0.0);
+    calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis, speed_profile);
     //auto speed_profile = trapezoidal_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, 1.0, 1.0);
     // write the speed profile to a file
     std::ofstream speed_profile_file("speed_profile.csv");
@@ -245,7 +245,7 @@ int main() {
   // write the path to a csv file
   std::ofstream path_file("path.csv");
   for (size_t i = 0; i < full_path.points.size(); i++) {
-    path_file << full_path.points[i].x << "," << full_path.points[i].y << std::endl;
+    path_file << full_path.points[i].x << "," << full_path.points[i].y << "," << full_path.yaws[i] << "," << full_path.curvatures[i] << std::endl;
   }
   do_simulation(full_path);
   return 0;
