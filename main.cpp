@@ -133,17 +133,24 @@ void do_simulation(const ClothoidPath& path)
     state = State(path.points[0].x, path.points[0].y, path.yaws[0], 0.0);
     double time = 0.0;
     // convert these
-    std::vector<double> x, y, yaw, v, t;
+    std::vector<double> x, y, yaw, v, t, curvature;
     x.push_back(state.x);
     y.push_back(state.y);
     yaw.push_back(state.yaw);
     v.push_back(state.v);
     t.push_back(0.0);
+    curvature.push_back(path.curvatures[0]);
     std::vector<double> speed_profile(path.yaws.size(), 0.0);
     std::array<double, SIZE> speed_profile_array;
     speed_profile_array.fill(0.0);
     calc_speed_profile(path.yaws.size(), params.max_speed, params.stop_speed, params.goal_dis, speed_profile);
-    calc_speed_profile_array(0, 600, 2.0, 0, 10, speed_profile_array);
+    calc_speed_profile_array(0, 100, 2.0, 0.6, 10, speed_profile_array);
+    calc_speed_profile_array(100, 200, 0.6, 0.6, 10, speed_profile_array);
+    calc_speed_profile_array(200, 300, 0.6, 1.5, 10, speed_profile_array);
+    calc_speed_profile_array(300, 400, 1.5, 1.5, 10, speed_profile_array);
+    calc_speed_profile_array(400, 500, 1.5, 0.6, 10, speed_profile_array);
+    calc_speed_profile_array(500, 600, 0.6, 0, 5, speed_profile_array);
+    
     // print the speed profile
     for (int i = 0; i < speed_profile_array.size(); i++) {
         std::cout << speed_profile_array[i] << std::endl;
@@ -175,6 +182,7 @@ void do_simulation(const ClothoidPath& path)
     path_file.close();
   
     std::ofstream state_file("state.txt");
+
     while (params.T >= time) 
     {
         double dl, ai;
@@ -198,19 +206,14 @@ void do_simulation(const ClothoidPath& path)
         double dx = state.x - path.points.back().x;
         double dy = state.y - path.points.back().y;
         std::cout << "Distance: " << hypot(dx, dy) << std::endl;
-        std::cout << "Goal distance: " << path.points.back().x << "," << path.points.back().y << std::endl;
-        double distance_tolerance = 0.2;
-        if (hypot(dx, dy) <= distance_tolerance) 
-        {
-            std::cout << "Goal" << std::endl;
-            break;
-        }
+        
 
         x.push_back(state.x);
         y.push_back(state.y);
         yaw.push_back(state.yaw);
         v.push_back(state.v);
         t.push_back(time);
+    
     }
     // write x, y, yaw to a csv file
     static int counter = 0;
