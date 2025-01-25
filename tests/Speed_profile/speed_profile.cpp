@@ -5,11 +5,14 @@
 #include <algorithm>
 #include <iostream>
 
+// TODO: modify to have start speed, cruising speed, and end speed
 void calc_speed_profile(const int start_index,
                         const int end_index,
-                        double max_speed,
-                        double stop_speed,
-                        int goal_dis,
+                        double start_speed,
+                        double cruising_speed,
+                        double end_speed,
+                        int ramp_up_distance,
+                        int ramp_down_distance,
                         std::array<double, PI_MAX_TRAJECTORY_PTS>& speed_profile)
 {
     // Basic validation
@@ -21,7 +24,7 @@ void calc_speed_profile(const int start_index,
     }
 
     // Convert goal_dis to an integer index range
-    int decel_count = goal_dis;
+    int decel_count = ramp_down_distance;
     if (decel_count < 0) {
         // If goal_dis is negative for some reason, just reset
         decel_count = 0;
@@ -30,7 +33,7 @@ void calc_speed_profile(const int start_index,
     // 1. Fill [start_index, end_index) with max_speed
     std::fill(speed_profile.begin() + start_index,
               speed_profile.begin() + end_index,
-              max_speed);
+              cruising_speed);
 
     // 2. Apply smooth deceleration from the back
     //    decelerate over min(decel_count, end_index - start_index) points
@@ -46,7 +49,7 @@ void calc_speed_profile(const int start_index,
             continue;
         }
 
-        double speed_from_rear = std::max(stop_speed, max_speed * deceleration_ratio);
+        double speed_from_rear = std::max(start_speed, cruising_speed * deceleration_ratio);
         speed_profile[index_from_rear] = speed_from_rear;
     }
 

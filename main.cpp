@@ -25,13 +25,13 @@ struct PathData {
 
   PathData() {
     // Initialize with your path data
-    nodes["500"] = {"500", 190.61, 183.0, 180, "501", 26.64, 0.600, "Clothoid"};
-    nodes["501"] = {"501", 187.25, 187.609, 90.0, "502", 0.00, 2.000, "Clothoid"};
-    nodes["502"] = {"502", 187.25, 194.0, 90.0, "503", 0.00, 1.500, "Clothoid"};
-    nodes["503"] = {"503", 187.25, 195.5, 90.0, "504", 48.37, 0.600, "Clothoid"};
-    nodes["504"] = {"504", 189.453, 199.005, 0.0, "505", 0.00, 2.000, "Clothoid"};
-    nodes["505"] = {"505", 195.5, 199.005, 0.0, "509", 0.00, 1.500, "Clothoid"};
-    nodes["506"] = {"506", 195.151, 183, 180, "507", 0.00, 1.500, "Clothoid"};
+    nodes["500"] = {"500", 190.61, 183.0, 0, "501", 26.64, 0.600, "Clothoid"};
+    nodes["501"] = {"501", 187.25, 187.609, 270, "502", 0.00, 2.000, "Clothoid"};
+    nodes["502"] = {"502", 187.25, 194.0, 270, "503", 0.00, 1.500, "Clothoid"};
+    nodes["503"] = {"503", 187.25, 195.5, 270, "504", 48.37, 0.600, "Clothoid"};
+    nodes["504"] = {"504", 189.453, 199.005, 180, "505", 0.00, 2.000, "Clothoid"};
+    nodes["505"] = {"505", 195.5, 199.005, 180, "509", 0.00, 1.500, "Clothoid"};
+    nodes["506"] = {"506", 195.151, 183, 0, "507", 0.00, 1.500, "Clothoid"};
   }
 };
 
@@ -235,14 +235,14 @@ int main() {
   PathData path_data;
   // steering angles vector
   
-  const auto& start_node = path_data.nodes["506"];
+  const auto& start_node = path_data.nodes["505"];
 
   // Define waypoints
-  const std::vector<PathNode> way_nodes = {
+  std::vector<PathNode> way_nodes = {
       path_data.nodes["500"], path_data.nodes["501"], path_data.nodes["502"],
       path_data.nodes["503"], path_data.nodes["504"]};
-
-  const auto& end_node = path_data.nodes["505"];
+  std::reverse(way_nodes.begin(), way_nodes.end());
+  const auto& end_node = path_data.nodes["506"];
   Point start_point = {start_node.x, start_node.y,
                        start_node.heading * M_PI / 180.0};
 
